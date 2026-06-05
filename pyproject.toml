@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pc-usage-watchdog"
+version = "0.1.0"
+description = "Windows desktop app for monitoring CPU/RAM usage, startup apps, scheduled tasks, and short-lived process launches."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "PC Usage Watchdog Contributors" }
+]
+keywords = ["windows", "process-monitor", "cpu", "ram", "scheduled-tasks", "tkinter"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Win32 (MS Windows)",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: System :: Monitoring",
+]
+dependencies = [
+  "psutil>=5.9.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pyinstaller>=6.0",
+]
+
+[project.scripts]
+pc-usage-watchdog = "pc_usage_watchdog.app:main"
+pc-usage-watchdog-audit = "pc_usage_watchdog.audit:main"
+pc-usage-watchdog-clean-report = "pc_usage_watchdog.clean_report:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pc_usage_watchdog*"]
