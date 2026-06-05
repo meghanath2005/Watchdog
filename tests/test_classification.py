@@ -1,4 +1,4 @@
-from pc_usage_watchdog.app import ProcessSnapshot, classify_process, is_system_path
+from pc_usage_watchdog.app import ProcessSnapshot, classify_process, is_system_path, is_windows_internal
 
 
 def test_system_idle_process_is_not_flagged():
@@ -23,6 +23,11 @@ def test_system_idle_process_is_not_flagged():
 
 def test_windows_defender_platform_path_is_system_like():
     assert is_system_path(r"C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.0\MsMpEng.exe")
+
+
+def test_windows_internals_are_identified_for_default_hiding():
+    assert is_windows_internal("System Idle Process")
+    assert is_windows_internal("explorer.exe")
 
 
 def test_temp_script_tool_is_flagged():

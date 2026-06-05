@@ -92,6 +92,10 @@ def is_codex_helper(name: str, exe: str, cmdline: str) -> bool:
     return "\\openai\\codex" in text or "program files\\windowsapps\\openai.codex" in text
 
 
+def is_windows_internal(name: str) -> bool:
+    return safe_lower(name) in CRITICAL_NAMES
+
+
 @dataclass
 class ProcessSnapshot:
     pid: int
@@ -380,6 +384,7 @@ class MonitorApp(tk.Tk):
         self.status_var = tk.StringVar(value="Starting watcher...")
         self.metric_var = tk.StringVar(value="CPU: --%   RAM: --%")
         self.only_flagged_var = tk.BooleanVar(value=False)
+        self.show_windows_internal_var = tk.BooleanVar(value=False)
         self.admin_var = tk.StringVar(value=self._admin_status_text())
         self.event_keys: deque[tuple] = deque(maxlen=500)
         self.event_key_set: set[tuple] = set()
@@ -438,6 +443,12 @@ class MonitorApp(tk.Tk):
             variable=self.only_flagged_var,
             command=self._render_process_rows,
         ).pack(side=tk.LEFT)
+        ttk.Checkbutton(
+            controls,
+            text="Show Windows internals",
+            variable=self.show_windows_internal_var,
+            command=self._render_process_rows,
+        ).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Label(controls, textvariable=self.admin_var).pack(side=tk.LEFT, padx=(16, 0))
         ttk.Button(controls, text="Refresh startup entries", command=self._refresh_startup_entries).pack(side=tk.RIGHT)
 
@@ -447,17 +458,17 @@ class MonitorApp(tk.Tk):
         self.process_tab = ttk.Frame(notebook)
         self.events_tab = ttk.Frame(notebook)
         self.startup_tab = ttk.Frame(notebook)
-        self.help_tab = ttk.Frame(notebook)
+        self.actions_tab = ttk.Frame(notebook)
 
         notebook.add(self.process_tab, text="Processes")
         notebook.add(self.events_tab, text="CMD flashes and starts")
         notebook.add(self.startup_tab, text="Startup/background")
-        notebook.add(self.help_tab, text="How to judge")
+        notebook.add(self.actions_tab, text="Actions")
 
         self._build_process_tab()
         self._build_events_tab()
         self._build_startup_tab()
-        self._build_help_tab()
+        self._build_actions_tab()
 
         footer = ttk.Frame(self, padding=(16, 0, 16, 12))
         footer.pack(fill=tk.X)
@@ -538,9 +549,9 @@ class MonitorApp(tk.Tk):
         self.startup_tree.pack(fill=tk.BOTH, expand=True)
         self.after(300, self._refresh_startup_entries)
 
-    def _build_help_tab(self) -> None:
+    def _build_actions_tab(self) -> None:
         text = tk.Text(
-            self.help_tab,
+            self.actions_tab,
             bg="#0f172a",
             fg="#e5e7eb",
             insertbackground="#e5e7eb",
@@ -554,18 +565,13 @@ class MonitorApp(tk.Tk):
         text.insert(
             tk.END,
             (
-                "How to use this app\n\n"
-                "1. Leave it running while you work. If a black CMD window flashes, open the "
-                "'CMD flashes and starts' tab and check the newest cmd.exe, powershell.exe, "
-                "conhost.exe, schtasks.exe, wscript.exe, or mshta.exe entry.\n\n"
-                "2. In Processes, sort by Review, CPU, or RAM. Review means the app found a "
-                "reason to inspect it, not proof that it is malware.\n\n"
-                "3. User-writable paths such as AppData, Temp, Downloads, Desktop, and ProgramData "
-                "deserve more attention than Program Files or Windows system paths.\n\n"
-                "4. Do not kill Windows core processes. If in doubt, copy the details and search "
-                "the path and command line before ending it.\n\n"
-                "5. If the app cannot see enough command-line detail, close it and run run.bat as "
-                "Administrator.\n"
+                "Recommended workflow\n\n"
+                "1. Leave the app running while you use the PC.\n\n"
+                "2. Use Processes to review high CPU, high RAM, startup noise, and unknown tools.\n\n"
+                "3. Use CMD flashes and starts when a black command window appears briefly.\n\n"
+                "4. Use Startup/background to find apps and tasks that keep coming back after restart.\n\n"
+                "5. Copy details before ending a process you do not recognize.\n\n"
+                "6. Run as Administrator when exact command-line capture is required.\n"
             ),
         )
         text.configure(state=tk.DISABLED)
@@ -614,6 +620,7 @@ class MonitorApp(tk.Tk):
     def _render_process_rows(self) -> None:
         search = safe_lower(self.search_var.get())
         only_flagged = self.only_flagged_var.get()
+        show_windows_internal = self.show_windows_internal_var.get()
         rows = list(self.process_rows.values())
 
         def key_func(p: ProcessSnapshot):
@@ -632,6 +639,8 @@ class MonitorApp(tk.Tk):
         rows.sort(key=key_func, reverse=self.sort_reverse)
         self.process_tree.delete(*self.process_tree.get_children())
         for p in rows:
+            if not show_windows_internal and is_windows_internal(p.name):
+                continue
             haystack = f"{p.name} {p.pid} {p.exe} {p.cmdline} {' '.join(p.reasons)}".lower()
             if search and search not in haystack:
                 continue

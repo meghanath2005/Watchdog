@@ -25,7 +25,7 @@ The main app has four tabs:
 - `Processes`: current CPU/RAM/process review.
 - `CMD flashes and starts`: process-start event log.
 - `Startup/background`: startup entries and scheduled tasks.
-- `How to judge`: quick triage guidance.
+- `Actions`: recommended workflow.
 
 ## Quick Start
 
@@ -130,8 +130,6 @@ Build a Windows executable:
 ## Important Notes
 
 - A high review score is not proof of malware. It means “inspect this.”
-- `System Idle Process` is unused CPU, not CPU usage.
-- `explorer.exe` is the Windows shell, taskbar, tray, desktop, and File Explorer host.
 - Microsoft Defender may show high CPU/RAM during scans.
 - Administrator mode improves access to WMI process-start events and protected process details.
 - The app does not auto-kill, auto-disable, or delete anything without explicit user action.
